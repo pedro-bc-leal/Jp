@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>日本語 Flashcards</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;700&family=Noto+Sans+JP:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+  :root {
+    --ink:#1a1a2e;--paper:#f7f4ef;--red:#c0392b;--red-light:#fdf0ef;
+    --mist:#e8e3da;--soft:#6b6560;--white:#ffffff;--shadow:rgba(26,26,46,0.10);
+    --green:#1d9e75;--green-bg:#e1f5ee;--amber:#ba7517;--amber-bg:#faeeda;
+    --blue:#185fa5;--blue-bg:#e6f1fb;--purple:#534AB7;--purple-bg:#EEEDFE;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--paper);font-family:'DM Sans',sans-serif;color:var(--ink);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px 16px 48px;}
+  header{text-align:center;margin-bottom:20px;}
+  .header-jp{font-family:'Noto Serif JP',serif;font-size:12px;letter-spacing:0.25em;color:var(--red);text-transform:uppercase;margin-bottom:4px;}
+  header h1{font-size:24px;font-weight:600;color:var(--ink);letter-spacing:-0.02em;}
+  .stats-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;justify-content:center;max-width:580px;width:100%;}
+  .stat-chip{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;border:1.5px solid;}
+  .stat-chip.due{background:var(--red-light);color:var(--red);border-color:#f5c6c2;}
+  .stat-chip.learning{background:var(--amber-bg);color:var(--amber);border-color:#f5d8a0;}
+  .stat-chip.mastered{background:var(--green-bg);color:var(--green);border-color:#9fe1cb;}
+  .stat-chip.total{background:var(--blue-bg);color:var(--blue);border-color:#b5d4f4;}
+  .filter-bar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:16px;max-width:580px;width:100%;}
+  .filter-btn{padding:4px 12px;border:1.5px solid var(--mist);background:var(--white);border-radius:20px;font-size:11px;font-weight:500;color:var(--soft);cursor:pointer;transition:all 0.15s;font-family:'DM Sans',sans-serif;}
+  .filter-btn:hover{border-color:var(--red);color:var(--red);}
+  .filter-btn.active{background:var(--red);border-color:var(--red);color:var(--white);}
+  .progress-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;font-size:12px;color:var(--soft);}
+  .progress-bar{width:140px;height:3px;background:var(--mist);border-radius:2px;overflow:hidden;}
+  .progress-fill{height:100%;background:var(--red);border-radius:2px;transition:width 0.3s ease;}
+  .card-scene{width:100%;max-width:560px;height:340px;perspective:1200px;cursor:pointer;margin-bottom:16px;}
+  .card-inner{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform 0.5s cubic-bezier(0.4,0,0.2,1);}
+  .card-inner.flipped{transform:rotateY(180deg);}
+  .card-face{position:absolute;width:100%;height:100%;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:16px;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:28px 32px;box-shadow:0 4px 20px var(--shadow);}
+  .card-front{background:var(--white);border-top:4px solid var(--red);}
+  .card-tag{position:absolute;top:16px;right:16px;font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--soft);background:var(--mist);padding:3px 8px;border-radius:10px;}
+  .srs-badge{position:absolute;top:16px;left:16px;font-size:10px;font-weight:500;padding:3px 8px;border-radius:10px;}
+  .srs-badge.new{background:var(--blue-bg);color:var(--blue);}
+  .srs-badge.learning{background:var(--amber-bg);color:var(--amber);}
+  .srs-badge.review{background:var(--green-bg);color:var(--green);}
+  .srs-badge.due{background:var(--red-light);color:var(--red);}
+  .front-text{font-family:'Noto Serif JP',serif;font-size:clamp(22px,5vw,36px);font-weight:400;color:var(--ink);text-align:center;line-height:1.4;}
+  .hint{margin-top:10px;font-size:11px;color:var(--soft);letter-spacing:0.05em;}
+  .card-img{max-width:100%;max-height:80px;border-radius:8px;margin-top:8px;object-fit:cover;opacity:0.92;cursor:zoom-in;transition:transform 0.15s,opacity 0.15s;}
+  .card-img:hover{opacity:1;transform:scale(1.04);}
+  .btn-delete{position:absolute;bottom:14px;right:14px;background:transparent;border:1.5px solid var(--mist);color:var(--soft);border-radius:8px;font-size:11px;padding:3px 9px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;}
+  .btn-delete:hover{border-color:var(--red);color:var(--red);background:var(--red-light);}
+  .delete-confirm{position:absolute;bottom:0;left:0;right:0;background:rgba(255,255,255,0.97);border-radius:0 0 16px 16px;padding:14px 18px;display:none;flex-direction:column;align-items:center;gap:10px;border-top:1px solid var(--mist);z-index:20;}
+  .delete-confirm.show{display:flex;}
+  .delete-confirm p{font-size:12px;color:var(--ink);}
+  .delete-confirm-btns{display:flex;gap:8px;}
+  .btn-confirm-yes{background:var(--red);color:white;border:none;border-radius:8px;padding:5px 14px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;}
+  .btn-confirm-no{background:var(--mist);color:var(--ink);border:none;border-radius:8px;padding:5px 14px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;}
+  .card-back{background:var(--ink);transform:rotateY(180deg);}
+  .back-meaning{font-size:clamp(12px,2.5vw,14px);font-weight:500;color:var(--white);text-align:center;line-height:1.65;margin-bottom:14px;}
+  .back-meaning em{color:#f0c060;font-style:normal;font-family:'Noto Serif JP',serif;font-size:1.1em;}
+  .example-label{font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--red);margin-bottom:5px;font-weight:500;}
+  .example{font-family:'Noto Sans JP',sans-serif;font-size:clamp(11px,2.2vw,13px);color:rgba(255,255,255,0.68);text-align:center;line-height:1.7;border-top:1px solid rgba(255,255,255,0.1);padding-top:12px;width:100%;}
+  .rating-label{font-size:11px;color:var(--soft);text-align:center;margin-bottom:6px;width:100%;max-width:560px;opacity:0;transition:opacity 0.25s;}
+  .rating-label.visible{opacity:1;}
+  .rating-row{display:flex;gap:8px;margin-bottom:14px;width:100%;max-width:560px;opacity:0;transform:translateY(8px);transition:all 0.25s ease;pointer-events:none;}
+  .rating-row.visible{opacity:1;transform:translateY(0);pointer-events:auto;}
+  .btn-rating{flex:1;padding:9px 4px;border:none;border-radius:10px;font-size:12px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;display:flex;flex-direction:column;align-items:center;gap:2px;}
+  .btn-rating span{font-size:9px;font-weight:400;opacity:0.75;}
+  .btn-rating.explain{background:var(--purple-bg);color:var(--purple);}
+  .btn-rating.explain:hover{background:#dddcfc;}
+  .btn-rating.hard{background:var(--amber-bg);color:var(--amber);}
+  .btn-rating.hard:hover{background:#f5d8a0;}
+  .btn-rating.good{background:var(--blue-bg);color:var(--blue);}
+  .btn-rating.good:hover{background:#c8dff5;}
+  .btn-rating.easy{background:var(--green-bg);color:var(--green);}
+  .btn-rating.easy:hover{background:#c0e8d8;}
+  .controls{display:flex;gap:10px;align-items:center;margin-bottom:12px;}
+  .btn{display:flex;align-items:center;gap:5px;padding:9px 18px;border:none;border-radius:10px;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s;font-family:'DM Sans',sans-serif;}
+  .btn-nav{background:var(--white);color:var(--ink);border:1.5px solid var(--mist);padding:9px 16px;}
+  .btn-nav:hover{border-color:var(--ink);}
+  .btn-nav:disabled{opacity:0.3;cursor:not-allowed;}
+  .btn-flip{background:var(--red);color:var(--white);}
+  .btn-flip:hover{background:#a93226;}
+  .bottom-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;font-size:12px;color:var(--soft);margin-bottom:10px;}
+  .btn-sm{background:transparent;border:1.5px solid var(--mist);color:var(--soft);font-size:11px;padding:5px 12px;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;display:inline-flex;align-items:center;gap:4px;}
+  .btn-sm:hover{border-color:var(--soft);color:var(--ink);}
+  .btn-sm.restore:hover{border-color:var(--green);color:var(--green);}
+  .btn-sm.reset-srs:hover{border-color:var(--amber);color:var(--amber);}
+  .stamp{position:absolute;bottom:14px;left:18px;width:32px;height:32px;border:2px solid rgba(192,57,43,0.18);border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:'Noto Serif JP',serif;font-size:13px;color:rgba(192,57,43,0.2);transform:rotate(-8deg);pointer-events:none;}
+  /* Lightbox */
+  .img-lightbox{position:fixed;inset:0;background:rgba(10,10,20,0.85);z-index:400;display:none;align-items:center;justify-content:center;cursor:zoom-out;}
+  .img-lightbox.show{display:flex;}
+  .img-lightbox img{max-width:92vw;max-height:88vh;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,0.5);}
+  /* Explain panel */
+  .explain-overlay{position:fixed;inset:0;background:rgba(20,20,35,0.55);z-index:200;display:none;align-items:flex-end;justify-content:center;}
+  .explain-overlay.show{display:flex;}
+  .explain-panel{background:var(--white);border-radius:20px 20px 0 0;width:100%;max-width:600px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;}
+  .explain-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid var(--mist);flex-shrink:0;}
+  .explain-header .title{font-size:14px;font-weight:600;color:var(--ink);}
+  .explain-header .word{font-family:'Noto Serif JP',serif;font-size:18px;color:var(--red);margin-left:8px;}
+  .btn-close-explain{background:var(--mist);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px;color:var(--soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .btn-close-explain:hover{background:#ddd8cf;}
+  .explain-body{flex:1;overflow-y:auto;padding:16px 20px;}
+  .explain-loading{display:flex;align-items:center;gap:10px;color:var(--soft);font-size:13px;padding:20px 0;}
+  .loading-dot{width:8px;height:8px;border-radius:50%;background:var(--red);animation:pulse 1s infinite;}
+  .loading-dot:nth-child(2){animation-delay:0.2s;}
+  .loading-dot:nth-child(3){animation-delay:0.4s;}
+  @keyframes pulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1)}}
+  .explain-content{font-size:14px;line-height:1.75;color:var(--ink);}
+  .explain-content h3{font-size:13px;font-weight:600;color:var(--red);text-transform:uppercase;letter-spacing:0.08em;margin:16px 0 8px;}
+  .explain-footer{padding:12px 20px;border-top:1px solid var(--mist);display:flex;gap:8px;flex-shrink:0;}
+  .explain-footer input{flex:1;border:1.5px solid var(--mist);border-radius:10px;padding:9px 14px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none;}
+  .explain-footer input:focus{border-color:var(--red);}
+  .explain-footer button{background:var(--red);color:white;border:none;border-radius:10px;padding:9px 16px;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;}
+  .explain-footer button:hover{background:#a93226;}
+  .explain-footer button:disabled{opacity:0.5;cursor:not-allowed;}
+  /* CSV modal */
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--ink);color:white;padding:9px 18px;border-radius:10px;font-size:12px;opacity:0;transition:all 0.28s ease;pointer-events:none;z-index:300;white-space:nowrap;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<h2 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Japanese vocabulary flashcards with spaced repetition</h2>
+
+<header>
+  <div class="header-jp">日本語学習</div>
+  <h1>Vocabulary Flashcards</h1>
+  <div id="deckStatus" style="font-size:10px;color:#6b6560;margin-top:4px">loading deck…</div>
+</header>
+
+<div class="stats-bar">
+  <div class="stat-chip due"><i class="ti ti-alarm" aria-hidden="true"></i> <span id="statDue">0</span> due</div>
+  <div class="stat-chip learning"><i class="ti ti-flame" aria-hidden="true"></i> <span id="statLearning">0</span> learning</div>
+  <div class="stat-chip mastered"><i class="ti ti-check" aria-hidden="true"></i> <span id="statMastered">0</span> mastered</div>
+  <div class="stat-chip total"><i class="ti ti-stack" aria-hidden="true"></i> <span id="statTotal">0</span> total</div>
+</div>
+
+<div class="filter-bar" id="filterBar"></div>
+
+<div class="progress-row">
+  <span id="progressText">1 / 72</span>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  <span id="tagLabel">all</span>
+</div>
+
+<div class="card-scene">
+  <div class="card-inner" id="cardInner">
+    <div class="card-face card-front" id="cardFront" onclick="flipCard()">
+      <div class="srs-badge new" id="srsBadge">new</div>
+      <div class="card-tag" id="cardTag"></div>
+      <div class="front-text" id="frontText"></div>
+      <img id="cardImg" class="card-img" src="" alt="manga panel" style="display:none" onclick="event.stopPropagation();openLightbox()">
+      <div class="hint" id="hintText">tap to reveal</div>
+      <div class="stamp">語</div>
+      <button class="btn-delete" onclick="event.stopPropagation();showDeleteConfirm()">✕ delete</button>
+      <div class="delete-confirm" id="deleteConfirm">
+        <p>Remove this card from your deck?</p>
+        <div class="delete-confirm-btns">
+          <button class="btn-confirm-yes" onclick="confirmDelete()">Remove</button>
+          <button class="btn-confirm-no" onclick="cancelDelete()">Keep</button>
+        </div>
+      </div>
+    </div>
+    <div class="card-face card-back" id="cardBack" onclick="flipCard()">
+      <div class="back-meaning" id="backMeaning"></div>
+      <div class="example-label">example</div>
+      <div class="example" id="backExample"></div>
+    </div>
+  </div>
+</div>
+
+<div class="rating-label" id="ratingLabel">どのくらい知っていましたか？</div>
+<div class="rating-row" id="ratingRow">
+  <button class="btn-rating explain" onclick="openExplain()">説明<span>もっと見る</span></button>
+  <button class="btn-rating hard" onclick="rate(1)">難しい<span>苦労した</span></button>
+  <button class="btn-rating good" onclick="rate(2)">良い<span>思い出した</span></button>
+  <button class="btn-rating easy" onclick="rate(3)">簡単<span>わかった</span></button>
+</div>
+
+<div class="controls">
+  <button class="btn btn-nav" id="btnPrev" onclick="navigate(-1)">← Prev</button>
+  <button class="btn btn-flip" onclick="flipCard()">Flip</button>
+  <button class="btn btn-nav" id="btnNext" onclick="navigate(1)">Next →</button>
+</div>
+
+<div class="bottom-row">
+  <button class="btn-sm" onclick="showDueFirst()"><i class="ti ti-alarm" aria-hidden="true"></i> Due first</button>
+  <button class="btn-sm" onclick="shuffleDeck()"><i class="ti ti-arrows-shuffle" aria-hidden="true"></i> Shuffle</button>
+  <button class="btn-sm restore" id="btnRestore" style="display:none" onclick="restoreDeleted()"><i class="ti ti-arrow-back-up" aria-hidden="true"></i> Restore (<span id="deletedCount">0</span>)</button>
+  <button class="btn-sm" onclick="exportSRS()"><i class="ti ti-download" aria-hidden="true"></i> Export SRS</button>
+  <button class="btn-sm" onclick="document.getElementById('srsFileInput').click()"><i class="ti ti-upload" aria-hidden="true"></i> Import SRS</button>
+  <input type="file" id="srsFileInput" accept=".json" style="display:none" onchange="importSRS(event)">
+  <button class="btn-sm reset-srs" onclick="confirmResetSRS()"><i class="ti ti-refresh" aria-hidden="true"></i> Reset SRS</button>
+</div>
+
+<!-- Lightbox -->
+<div class="img-lightbox" id="imgLightbox" onclick="closeLightbox()">
+  <img id="lightboxImg" src="" alt="manga panel enlarged">
+</div>
+
+<!-- Explain panel -->
+<div class="explain-overlay" id="explainOverlay" onclick="closeExplainOnBg(event)">
+  <div class="explain-panel">
+    <div class="explain-header">
+      <div style="display:flex;align-items:center;">
+        <span class="title">More examples</span>
+        <span class="word" id="explainWord"></span>
+      </div>
+      <button class="btn-close-explain" onclick="closeExplain()" aria-label="Close">✕</button>
+    </div>
+    <div class="explain-body" id="explainBody">
+      <div class="explain-loading" id="explainLoading" style="display:none">
+        <div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div>
+        <span>Generating examples…</span>
+      </div>
+      <div class="explain-content" id="explainContent"></div>
+    </div>
+    <div class="explain-footer">
+      <input type="text" id="explainInput" placeholder="Ask a follow-up question…" onkeydown="if(event.key==='Enter')sendFollowUp()">
+      <button id="explainSendBtn" onclick="sendFollowUp()">Ask ↗</button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let BUILTIN_CARDS=[];
+let DECK_IMAGES={};
+const SHEET_CSV_URL='https://docs.google.com/spreadsheets/d/1L9xCAHYTB74TsnqUz4lEv7qiiqdRV2zpFyJZuCGUgcs/gviz/tq?tqx=out:csv';
+
+function parseCSV(text){
+  const rows=[];let row=[];let cur='';let inQ=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(inQ){
+      if(ch==='"'){
+        if(text[i+1]==='"'){cur+='"';i++;}
+        else inQ=false;
+      }else cur+=ch;
+    }else{
+      if(ch==='"')inQ=true;
+      else if(ch===','){row.push(cur);cur='';}
+      else if(ch==='\n'||ch==='\r'){
+        if(ch==='\r'&&text[i+1]==='\n')i++;
+        row.push(cur);cur='';
+        if(row.some(c=>c!==''))rows.push(row);
+        row=[];
+      }else cur+=ch;
+    }
+  }
+  if(cur!==''||row.length){row.push(cur);if(row.some(c=>c!==''))rows.push(row);}
+  return rows;
+}
+
+function sheetRowsToCards(rows){
+  // Expect header: Front,Back,Example,Tags,ImageKey
+  const cards=[];
+  for(let i=1;i<rows.length;i++){
+    const r=rows[i];
+    if(!r[0])continue;
+    const front=r[0].trim();
+    const back=(r[1]||'').trim();
+    const example=(r[2]||'').trim().split(' | ').join('\n');
+    const tags=(r[3]||'vocab').trim();
+    const imgKey=(r[4]||'').trim();
+    if(imgKey&&DECK_IMAGES[imgKey]){
+      cards.push([front,back,example,tags,DECK_IMAGES[imgKey]]);
+    }else{
+      cards.push([front,back,example,tags]);
+    }
+  }
+  return cards;
+}
+
+async function loadDeck(){
+  // 1. Load deck.json for images + fallback cards
+  let fallbackCards=[];
+  try{
+    const res=await fetch('deck.json?t='+Date.now());
+    const deck=await res.json();
+    DECK_IMAGES=deck.images||{};
+    fallbackCards=(deck.cards||[]).map(c=>{
+      if(c.length>4&&typeof c[4]==='string'&&DECK_IMAGES[c[4]]){
+        return [c[0],c[1],c[2],c[3],DECK_IMAGES[c[4]]];
+      }
+      return c;
+    });
+  }catch(e){}
+  // 2. Try the Google Sheet (live deck)
+  let liveOk=false;
+  try{
+    const res=await fetch(SHEET_CSV_URL);
+    if(res.ok){
+      const text=await res.text();
+      const rows=parseCSV(text);
+      const cards=sheetRowsToCards(rows);
+      if(cards.length>0){
+        BUILTIN_CARDS=cards;
+        liveOk=true;
+      }
+    }
+  }catch(e){}
+  // 3. Fallback
+  if(!liveOk)BUILTIN_CARDS=fallbackCards;
+  RAW=[...BUILTIN_CARDS];
+  buildFilters();buildDeck();sortByDue();renderCard();
+  const el=document.getElementById('deckStatus');
+  if(el){
+    if(liveOk)el.textContent=BUILTIN_CARDS.length+' cards · live from sheet';
+    else if(BUILTIN_CARDS.length)el.textContent=BUILTIN_CARDS.length+' cards · offline copy';
+    else el.textContent='Failed to load deck — check connection';
+  }
+}
+
+
+let srsData={}, deletedFronts=new Set(), RAW=[...BUILTIN_CARDS];
+try{srsData=JSON.parse(localStorage.getItem(SRS_KEY))||{};}catch(e){}
+try{deletedFronts=new Set(JSON.parse(localStorage.getItem(DEL_KEY))||[]);}catch(e){}
+
+function saveSRS(){try{localStorage.setItem(SRS_KEY,JSON.stringify(srsData));}catch(e){}}
+function saveDel(){try{localStorage.setItem(DEL_KEY,JSON.stringify([...deletedFronts]));}catch(e){}}
+
+function getCard(front){
+  if(!srsData[front])srsData[front]={interval:0,easeFactor:2.5,repetitions:0,nextDue:Date.now(),lapses:0};
+  return srsData[front];
+}
+function cardStatus(front){
+  const c=getCard(front);
+  if(c.repetitions===0)return 'new';
+  if(c.interval<1)return 'learning';
+  if(Date.now()>=c.nextDue)return 'due';
+  return 'review';
+}
+function applyRating(front,quality){
+  const c=getCard(front);
+  const q=[1,2,4,5][quality];
+  if(q<3){c.repetitions=0;c.interval=1;if(quality===0)c.lapses++;}
+  else{
+    if(c.repetitions===0)c.interval=1;
+    else if(c.repetitions===1)c.interval=6;
+    else c.interval=Math.round(c.interval*c.easeFactor);
+    c.repetitions++;
+  }
+  c.easeFactor=Math.max(1.3,c.easeFactor+0.1-(5-q)*(0.08+(5-q)*0.02));
+  c.nextDue=Date.now()+c.interval*24*60*60*1000;
+  srsData[front]=c;saveSRS();
+}
+
+let activeTag='all',deck=[],idx=0,flipped=false;
+const allTagsSet=()=>['all',...new Set(RAW.map(r=>r[3]))];
+
+function buildDeck(){
+  const f=activeTag==='all'?RAW:RAW.filter(r=>r[3]===activeTag);
+  deck=f.filter(r=>!deletedFronts.has(r[0]));
+}
+function sortByDue(){
+  deck.sort((a,b)=>{const o={new:0,due:1,learning:2,review:3};return o[cardStatus(a[0])]-o[cardStatus(b[0])];});
+}
+function buildFilters(){
+  const bar=document.getElementById('filterBar');bar.innerHTML='';
+  allTagsSet().forEach(tag=>{
+    const btn=document.createElement('button');
+    btn.className='filter-btn'+(tag===activeTag?' active':'');
+    btn.textContent=tag;btn.onclick=()=>setFilter(tag);bar.appendChild(btn);
+  });
+}
+function setFilter(tag){
+  activeTag=tag;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.toggle('active',b.textContent===tag));
+  buildDeck();sortByDue();idx=0;flipped=false;renderCard();
+}
+function updateStats(){
+  const active=RAW.filter(r=>!deletedFronts.has(r[0]));
+  let due=0,learning=0,mastered=0;
+  active.forEach(r=>{const s=cardStatus(r[0]);if(s==='new'||s==='due')due++;else if(s==='learning')learning++;else mastered++;});
+  document.getElementById('statDue').textContent=due;
+  document.getElementById('statLearning').textContent=learning;
+  document.getElementById('statMastered').textContent=mastered;
+  document.getElementById('statTotal').textContent=active.length;
+}
+function renderCard(){
+  updateStats();
+  if(!deck.length){
+    document.getElementById('frontText').textContent='完了！';
+    document.getElementById('hintText').textContent='no cards in this filter';
+    document.getElementById('cardTag').textContent='';
+    document.getElementById('srsBadge').textContent='';
+    document.getElementById('cardImg').style.display='none';
+    hideRating();return;
+  }
+  const [front,back,example,tag,image]=deck[idx];
+  document.getElementById('frontText').textContent=front;
+  document.getElementById('cardTag').textContent=tag.replace('vocab ','').replace('grammar ','');
+  document.getElementById('hintText').textContent='tap to reveal';
+  const status=cardStatus(front);
+  const badge=document.getElementById('srsBadge');
+  badge.className='srs-badge '+status;
+  badge.textContent={new:'new',learning:'learning',due:'due for review',review:'scheduled'}[status];
+  const imgEl=document.getElementById('cardImg');
+  if(image){imgEl.src=image;imgEl.style.display='block';}else{imgEl.src='';imgEl.style.display='none';}
+  const parts=back.split(' — ');
+  document.getElementById('backMeaning').innerHTML=parts.map((p,i)=>i===0?`<em>${p}</em>`:`<span style="font-size:12px;opacity:0.8;font-weight:400">${p}</span>`).join('<br>');
+  const lines=example.split('\n');
+  document.getElementById('backExample').innerHTML=lines.map((l,i)=>i===0?`<span style="font-family:'Noto Serif JP',serif;font-size:19px;color:rgba(255,255,255,0.92)">${l}</span>`:`<span style="font-size:11px">${l}</span>`).join('<br>');
+  document.getElementById('cardInner').classList.remove('flipped');
+  document.getElementById('deleteConfirm').classList.remove('show');
+  flipped=false;hideRating();
+  const total=deck.length;
+  document.getElementById('progressText').textContent=`${idx+1} / ${total}`;
+  document.getElementById('progressFill').style.width=`${((idx+1)/total)*100}%`;
+  document.getElementById('tagLabel').textContent=activeTag;
+  document.getElementById('btnPrev').disabled=idx===0;
+  document.getElementById('btnNext').disabled=idx===total-1;
+  const dc=deletedFronts.size;
+  document.getElementById('deletedCount').textContent=dc;
+  document.getElementById('btnRestore').style.display=dc>0?'inline-flex':'none';
+}
+function flipCard(){flipped=!flipped;document.getElementById('cardInner').classList.toggle('flipped',flipped);if(flipped)showRating();else hideRating();}
+function showRating(){document.getElementById('ratingRow').classList.add('visible');document.getElementById('ratingLabel').classList.add('visible');}
+function hideRating(){document.getElementById('ratingRow').classList.remove('visible');document.getElementById('ratingLabel').classList.remove('visible');}
+function rate(quality){
+  applyRating(deck[idx][0],quality);
+  const labels=['Again','Hard — interval shortened','Good — scheduled','Easy — well spaced'];
+  showToast(labels[quality]);
+  buildDeck();sortByDue();
+  idx=quality===0?0:Math.min(idx+1,deck.length-1);
+  renderCard();
+}
+function navigate(dir){const n=idx+dir;if(n<0||n>=deck.length)return;idx=n;renderCard();}
+function shuffleDeck(){for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];}idx=0;renderCard();showToast('Deck shuffled');}
+function showDueFirst(){sortByDue();idx=0;renderCard();showToast('Sorted — due cards first');}
+function showDeleteConfirm(){document.getElementById('deleteConfirm').classList.add('show');}
+function cancelDelete(){document.getElementById('deleteConfirm').classList.remove('show');}
+function confirmDelete(){deletedFronts.add(deck[idx][0]);saveDel();buildDeck();sortByDue();if(idx>=deck.length)idx=Math.max(0,deck.length-1);renderCard();showToast('Card removed');}
+function restoreDeleted(){deletedFronts.clear();saveDel();buildDeck();sortByDue();idx=0;renderCard();showToast('All cards restored');}
+function confirmResetSRS(){if(confirm('Reset all SRS progress?')){srsData={};saveSRS();buildDeck();sortByDue();idx=0;renderCard();showToast('SRS progress reset');}}
+
+function exportSRS(){
+  const data={srs:srsData,deleted:Array.from(deletedFronts),exported:new Date().toISOString(),cardCount:BUILTIN_CARDS.length};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='japanese-srs-backup-'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  showToast('SRS progress exported ('+Object.keys(srsData).length+' cards)');
+}
+
+function importSRS(event){
+  const file=event.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const data=JSON.parse(e.target.result);
+      if(data.srs){
+        // Merge: imported data wins for cards that exist in both, keep local-only cards
+        const merged={...srsData,...data.srs};
+        srsData=merged;
+        saveSRS();
+      }
+      if(data.deleted&&Array.isArray(data.deleted)){
+        data.deleted.forEach(f=>deletedFronts.add(f));
+        localStorage.setItem(DEL_KEY,JSON.stringify(Array.from(deletedFronts)));
+      }
+      buildDeck();sortByDue();idx=0;renderCard();updateDeleteBtn();
+      showToast('Imported SRS progress ('+Object.keys(srsData).length+' cards)');
+    }catch(err){showToast('Error: invalid file');}
+  };
+  reader.readAsText(file);
+  event.target.value='';
+}
+// Lightbox
+function openLightbox(){const src=document.getElementById('cardImg').src;if(!src)return;document.getElementById('lightboxImg').src=src;document.getElementById('imgLightbox').classList.add('show');}
+function closeLightbox(){document.getElementById('imgLightbox').classList.remove('show');}
+
+// Explain panel
+let explainHistory=[],explainFront='',explainBack='';
+function openExplain(){
+  if(!deck.length)return;
+  const[front,back]=deck[idx];
+  explainFront=front;explainBack=back;explainHistory=[];
+  document.getElementById('explainWord').textContent=front;
+  document.getElementById('explainContent').innerHTML='';
+  document.getElementById('explainLoading').style.display='flex';
+  document.getElementById('explainOverlay').classList.add('show');
+  document.getElementById('explainInput').value='';
+  fetchExplain(`I am a Japanese language learner. I just saw the flashcard: "${front}" which means "${back}". Please give me 4 short, natural example sentences using this word/grammar point. For each: show the Japanese with furigana in brackets like 漢字(かんじ), then an English translation. Keep it concise. After the examples, give one quick tip about common mistakes or nuances learners miss.`);
+}
+async function fetchExplain(userMsg){
+  document.getElementById('explainLoading').style.display='flex';
+  document.getElementById('explainSendBtn').disabled=true;
+  explainHistory.push({role:'user',content:userMsg});
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,
+        system:'You are a friendly Japanese language tutor. Keep responses focused and practical. Use furigana in brackets for kanji: 漢字(かんじ). Always provide both Japanese and English. Be concise.',
+        messages:explainHistory})
+    });
+    const data=await res.json();
+    const text=data.content?.filter(b=>b.type==='text').map(b=>b.text).join('')||'No response received.';
+    explainHistory.push({role:'assistant',content:text});
+    renderExplainContent(text);
+  }catch(e){renderExplainContent('Sorry, something went wrong. Please try again.');}
+  document.getElementById('explainLoading').style.display='none';
+  document.getElementById('explainSendBtn').disabled=false;
+}
+function renderExplainContent(text){
+  document.getElementById('explainLoading').style.display='none';
+  const html=text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/#{1,3} (.+)/g,'<h3>$1</h3>').replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>');
+  const existing=document.getElementById('explainContent').innerHTML;
+  document.getElementById('explainContent').innerHTML=existing?existing+'<hr style="border:none;border-top:1px solid var(--mist);margin:16px 0"><p>'+html+'</p>':'<p>'+html+'</p>';
+  document.getElementById('explainBody').scrollTop=document.getElementById('explainBody').scrollHeight;
+}
+function sendFollowUp(){const input=document.getElementById('explainInput');const msg=input.value.trim();if(!msg)return;input.value='';fetchExplain(msg);}
+function closeExplain(){document.getElementById('explainOverlay').classList.remove('show');}
+function closeExplainOnBg(e){if(e.target===document.getElementById('explainOverlay'))closeExplain();}
+
+// CSV update
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+document.addEventListener('keydown',e=>{
+  if(document.getElementById('explainOverlay').classList.contains('show'))return;
+  if(e.key==='Escape'){closeLightbox();closeExplain();}
+  if(e.key==='ArrowRight')navigate(1);
+  if(e.key==='ArrowLeft')navigate(-1);
+  if(e.key===' '){e.preventDefault();flipCard();}
+  if(e.key==='1'&&flipped)openExplain();
+  if(e.key==='2'&&flipped)rate(1);
+  if(e.key==='3'&&flipped)rate(2);
+  if(e.key==='4'&&flipped)rate(3);
+});
+
+loadDeck();
+</script>
+</body></html>
